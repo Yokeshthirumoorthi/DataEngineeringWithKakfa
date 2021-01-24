@@ -25,7 +25,7 @@
 from confluent_kafka import Producer, KafkaError
 import json
 import ccloud_lib
-
+import time
 
 if __name__ == '__main__':
 
@@ -64,9 +64,18 @@ if __name__ == '__main__':
             print("Produced record to topic {} partition [{}] @ offset {}"
                   .format(msg.topic(), msg.partition(), msg.offset()))
 
-    for n in range(10):
-        record_key = "alice"
-        record_value = json.dumps({'count': n})
+    folder_name = "./downloads"
+    download_date = time.strftime("%Y%m%d")
+    file_format = ".json"
+    file_name = folder_name + "/" + download_date + file_format
+
+    with open(file_name) as f:
+        # return JSON object as a dictionary
+        bcsample_data = json.load(f)
+
+    for bc_data in bcsample_data:
+        record_key = "breadcrumb"
+        record_value = json.dumps(bc_data) # parse the data
         print("Producing record: {}\t{}".format(record_key, record_value))
         producer.produce(topic, key=record_key, value=record_value, on_delivery=acked)
         # p.poll() serves delivery reports (on_delivery)
