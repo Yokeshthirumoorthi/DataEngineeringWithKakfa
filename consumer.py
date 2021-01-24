@@ -25,7 +25,7 @@
 from confluent_kafka import Consumer
 import json
 import ccloud_lib
-
+import time
 
 if __name__ == '__main__':
 
@@ -53,6 +53,12 @@ if __name__ == '__main__':
 
     # Process messages
     total_count = 0
+
+    folder_name = "./storage"
+    download_date = time.strftime("%Y%m%d")
+    file_format = ".json"
+    file_name = folder_name + "/" + download_date + file_format
+
     try:
         while True:
             msg = consumer.poll(1.0)
@@ -70,11 +76,12 @@ if __name__ == '__main__':
                 record_key = msg.key()
                 record_value = msg.value()
                 data = json.loads(record_value)
-                count = data['count']
-                total_count += count
-                print("Consumed record with key {} and value {}, \
-                      and updated total count to {}"
-                      .format(record_key, record_value, total_count))
+                print("Consumed record with key {} and value {}"
+                      .format(record_key, record_value))
+                # write the incoming records to file
+                with open(file_name, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=4)
+      
     except KeyboardInterrupt:
         pass
     finally:
