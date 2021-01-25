@@ -1,0 +1,9 @@
+[Unit]
+Description=Run kafka consumer as service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/yokesh/DataEngineeringWithKakfa/consumer.py -f $HOME/.confluent/librdkafka.config -t test1
+
+[Install]
+WantedBy=multi-user.target
