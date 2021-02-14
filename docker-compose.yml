@@ -1,0 +1,37 @@
+version: '3.4'
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:12
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+  adminer:
+    image: adminer
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - ${PG_ADMINER_PORT}:8080
+
+  # consumer:
+  #     container_name: consumer
+  #     build:
+  #       context: .
+  #       dockerfile: Dockerfile
+  #     depends_on:
+  #       - postgres
+  #     volumes:
+  #       - data:/srv/data
+  #     restart: on-failure
+
+volumes:
+  db_data:
+  data:
