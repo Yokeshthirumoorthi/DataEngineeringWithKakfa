@@ -49,6 +49,22 @@ def row2vals(row):
     """
     return ret
 
+def row2vals_trip(row):
+    tripId = row['EVENT_NO_TRIP']
+    routeId = 0 # Temp value
+    vehicleId = row['VEHICLE_ID']
+    serviceKey = 'Weekday' # Temp value
+    direction =  'Out' # row['DIRECTION'] or 0.0
+    
+    ret = f"""
+        {tripId},
+        {routeId},
+        {vehicleId},
+        '{serviceKey}',
+        '{direction}'
+    """
+    return ret
+
 # read the input data file into a list of row strings
 # skip the header row
 def readdata(fname):
@@ -65,7 +81,7 @@ def readdata(fname):
 def getSQLcmnds(rowlist):
 	cmdlist = []
 	for row in rowlist:
-		valstr = row2vals(row)
+		valstr = row2vals_trip(row)
 		cmd = f"INSERT INTO {Trip_TableName} VALUES ({valstr});"
 		cmdlist.append(cmd)
 	return cmdlist
@@ -78,15 +94,14 @@ def dbconnect():
         user=DBuser,
         password=DBpwd,
 	)
-	connection.autocommit = True
+	connection.autocommit = False
 	return connection
-
 
 def dropIfExists(conn):
     with conn.cursor() as cursor:
         cursor.execute(f"""
-            DROP TABLE IF EXISTS {Trip_TableName};
             DROP TABLE IF EXISTS {BreadCrumb_TableName};
+            DROP TABLE IF EXISTS {Trip_TableName};
             drop type if exists service_type;
             drop type if exists tripdir_type;
         """)
@@ -138,6 +153,22 @@ def createBreadCrumbTable(conn):
 
 		print(f"Created {BreadCrumb_TableName}")
 
+def load_trip(conn, icmdlist):
+    with conn.cursor() as cursor:
+        print(f"Loading {len(icmdlist)} rows")
+        start = time.perf_counter()
+    
+        for cmd in icmdlist:
+            try:
+                cursor.execute(cmd)
+            except psycopg2.IntegrityError:
+                conn.rollback()
+            else:
+                conn.commit()
+
+        elapsed = time.perf_counter() - start
+        print(f'Finished Loading. Elapsed Time: {elapsed:0.4} seconds')                
+
 def load(conn, icmdlist):
 	with conn.cursor() as cursor:
 		print(f"Loading {len(icmdlist)} rows")
@@ -164,7 +195,7 @@ def main():
     	createTripTable(conn)
     	createBreadCrumbTable(conn)
 
-    # load(conn, cmdlist)
+    load_trip(conn, cmdlist)
 
 
 if __name__ == "__main__":
