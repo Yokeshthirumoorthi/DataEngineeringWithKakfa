@@ -81,28 +81,40 @@ def dbconnect():
 	connection.autocommit = True
 	return connection
 
+
+def dropIfExists(conn):
+    with conn.cursor() as cursor:
+        cursor.execute(f"""
+            DROP TABLE IF EXISTS {Trip_TableName};
+            DROP TABLE IF EXISTS {BreadCrumb_TableName};
+            drop type if exists service_type;
+            drop type if exists tripdir_type;
+        """)
+
+        print(f"Created Enum Types")
+
+def createEnumTypes(conn):
+    with conn.cursor() as cursor:
+        cursor.execute(f"""
+            create type service_type as enum ('Weekday', 'Saturday', 'Sunday');
+            create type tripdir_type as enum ('Out', 'Back');
+        """)
+
+        print(f"Created Enum Types")
+
 # create the target table 
 # assumes that conn is a valid, open connection to a Postgres database
 def createTripTable(conn):
 	with conn.cursor() as cursor:
 		cursor.execute(f"""
-        	DROP TABLE IF EXISTS {Trip_TableName};
         	CREATE TABLE {Trip_TableName} (
-            EventNoTrip       TEXT,
-            EventNoStop       TEXT,
-            OpdDate        TEXT,
-            VehicleId      TEXT,
-            Meters      TEXT,
-            ActTime        TEXT,
-            Velocity        TEXT,
-            Direction       TEXT,
-            RadioQuality       TEXT,
-            GpsLongitude       TEXT,
-            GpsLatitude        TEXT,
-            GpsSatellites      TEXT,
-            GpsHdop                TEXT,
-            ScheduleDeviation      TEXT
+            trip_id integer,
+            route_id integer,
+            vehicle_id integer,
+            service_key service_type,
+            direction tripdir_type
          	);
+            ALTER TABLE {Trip_TableName} ADD PRIMARY KEY (trip_id);
     	""")
 
 		print(f"Created {Trip_TableName}")
@@ -113,23 +125,15 @@ def createBreadCrumbTable(conn):
 
 	with conn.cursor() as cursor:
 		cursor.execute(f"""
-        	DROP TABLE IF EXISTS {BreadCrumb_TableName};
         	CREATE TABLE {BreadCrumb_TableName} (
-            EventNoTrip       TEXT,
-            EventNoStop       TEXT,
-            OpdDate        TEXT,
-            VehicleId      TEXT,
-            Meters      TEXT,
-            ActTime        TEXT,
-            Velocity        TEXT,
-            Direction       TEXT,
-            RadioQuality       TEXT,
-            GpsLongitude       TEXT,
-            GpsLatitude        TEXT,
-            GpsSatellites      TEXT,
-            GpsHdop                TEXT,
-            ScheduleDeviation      TEXT
+            tstamp timestamp,
+            latitude float,
+            longitude float,
+            direction integer,
+            speed float,
+            trip_id integer
          	);
+            ALTER TABLE {BreadCrumb_TableName} ADD FOREIGN KEY (trip_id) REFERENCES {Trip_TableName};
     	""")
 
 		print(f"Created {BreadCrumb_TableName}")
@@ -155,10 +159,12 @@ def main():
     cmdlist = getSQLcmnds(rlis[:5])
 
     if CreateDB:
+    	dropIfExists(conn)
+    	createEnumTypes(conn)
     	createTripTable(conn)
     	createBreadCrumbTable(conn)
 
-    load(conn, cmdlist)
+    # load(conn, cmdlist)
 
 
 if __name__ == "__main__":
