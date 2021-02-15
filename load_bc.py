@@ -6,6 +6,7 @@ import psycopg2
 import argparse
 import re
 import json
+from datetime import datetime
 
 DBname = "postgres"
 DBuser = "postgres"
@@ -65,6 +66,24 @@ def row2vals_trip(row):
     """
     return ret
 
+def row2vals_breadcrumb(row):
+    tstamp = datetime.strptime(row['OPD_DATE'], '%d-%b-%y')
+    latitude = row['GPS_LATITUDE']
+    longitude = row['GPS_LONGITUDE']
+    direction = 0 #row['DIRECTION']
+    speed = 0 #row['VELOCITY']
+    tripId = row['EVENT_NO_TRIP']
+    
+    ret = f"""
+        '{tstamp}',
+        {latitude},
+        {longitude},
+        {direction},
+        {speed},
+        {tripId}
+    """
+    return ret
+
 # read the input data file into a list of row strings
 # skip the header row
 def readdata(fname):
@@ -83,6 +102,14 @@ def getSQLcmnds(rowlist):
 	for row in rowlist:
 		valstr = row2vals_trip(row)
 		cmd = f"INSERT INTO {Trip_TableName} VALUES ({valstr});"
+		cmdlist.append(cmd)
+	return cmdlist
+
+def getSQLcmnds_breadcrumb(rowlist):
+	cmdlist = []
+	for row in rowlist:
+		valstr = row2vals_breadcrumb(row)
+		cmd = f"INSERT INTO {BreadCrumb_TableName} VALUES ({valstr});"
 		cmdlist.append(cmd)
 	return cmdlist
 
@@ -159,8 +186,10 @@ def load_trip(conn, icmdlist):
         start = time.perf_counter()
     
         for cmd in icmdlist:
+            print (cmd)
+            # cursor.execute(cmd)
             try:
-                cursor.execute(cmd)
+                print(cursor.execute(cmd))
             except psycopg2.IntegrityError:
                 conn.rollback()
             else:
@@ -188,6 +217,7 @@ def main():
     rlis = readdata(Datafile)
     
     cmdlist = getSQLcmnds(rlis[:5])
+    cmdlist_breadcrumb = getSQLcmnds_breadcrumb(rlis[:5])
 
     if CreateDB:
     	dropIfExists(conn)
@@ -195,7 +225,7 @@ def main():
     	createTripTable(conn)
     	createBreadCrumbTable(conn)
 
-    load_trip(conn, cmdlist)
+    load_trip(conn, cmdlist_breadcrumb)
 
 
 if __name__ == "__main__":
