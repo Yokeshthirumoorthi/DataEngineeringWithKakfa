@@ -16,6 +16,38 @@ Trip_TableName = 'Trip'
 Datafile = "./downloads/2021-01-13.json"  # name of the data file to be loaded
 CreateDB = True  # indicates whether the DB table should be (re)-created
 
+def isValidTripId(tripId):
+    return tripId != ''
+
+def isValidLatitude(latitude):
+    return latitude != ''
+
+def isValidLongitude(tripId):
+    return tripId != ''
+
+def isValidTripData(row):
+    valid = True
+
+    if not isValidTripId(row['EVENT_NO_TRIP']):
+        valid = False
+
+    return valid
+
+def isValidBreadCrumbData(row):
+    valid = True
+
+    if not isValidTripId(row['EVENT_NO_TRIP']):
+        valid = False
+
+    if not isValidLatitude(row['GPS_LATITUDE']):
+        valid = False
+
+    if not isValidLongitude(row['GPS_LONGITUDE']):
+        valid = False
+
+    return valid
+
+
 def row2vals_trip(row):
     tripId = row['EVENT_NO_TRIP']
     routeId = 0 # Temp value
@@ -63,14 +95,8 @@ def readdata(fname):
 
 	return rowlist
 
-def getSQLcmnd_trip(row):
-    valstr = row2vals_trip(row)
-    cmd = f"INSERT INTO {Trip_TableName} VALUES ({valstr});"
-    return cmd
-
-def getSQLcmnd_breadcrumb(row):
-    valstr = row2vals_breadcrumb(row)
-    cmd = f"INSERT INTO {BreadCrumb_TableName} VALUES ({valstr});"
+def getSQLcmnd(tableName, valstr):
+    cmd = f"INSERT INTO {tableName} VALUES ({valstr});"
     return cmd
 
 # connect to the database
@@ -142,20 +168,14 @@ def createBreadCrumbTable(conn):
 
 def load(conn, cmd):
     with conn.cursor() as cursor:
-        print(f"Loading {len(cmd)} rows")
-        start = time.perf_counter()
-
         # print (cmd)
         # cursor.execute(cmd)
         try:
-            print(cursor.execute(cmd))
+            cursor.execute(cmd)
         except psycopg2.IntegrityError:
             conn.rollback()
         else:
             conn.commit()
-
-        elapsed = time.perf_counter() - start
-        print(f'Finished Loading. Elapsed Time: {elapsed:0.4} seconds')                
 
 def main():
     conn = dbconnect()
@@ -167,12 +187,17 @@ def main():
     	createTripTable(conn)
     	createBreadCrumbTable(conn)
 
-    for row in rlis[:500]:
-        cmd_trip = getSQLcmnd_trip(row)
-        cmd_breadcrumb = getSQLcmnd_breadcrumb(row)
-        load(conn, cmd_trip)
-        load(conn, cmd_breadcrumb)
+    start = time.perf_counter()
 
+    for row in rlis[:500]:
+        if isValidTripData(row) & isValidBreadCrumbData(row):
+            cmd_trip = getSQLcmnd(Trip_TableName, row2vals_trip(row))
+            cmd_breadcrumb = getSQLcmnd(BreadCrumb_TableName, row2vals_breadcrumb(row))
+            load(conn, cmd_trip)
+            load(conn, cmd_breadcrumb)
+
+    elapsed = time.perf_counter() - start
+    print(f'Finished Loading. Elapsed Time: {elapsed:0.4} seconds')   
 
 if __name__ == "__main__":
     main()
