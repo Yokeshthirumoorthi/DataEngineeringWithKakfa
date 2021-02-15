@@ -26,7 +26,7 @@ def isTripIdAndVehicleIdAvailable(row):
 def isTripIdAndVehicleIdValid(row):
     tripId = row['EVENT_NO_TRIP']
     vehicleId = row['VEHICLE_ID']
-    return int(tripId) > 0 & int(vehicleId) > 0 & len(vehicleId) == 4
+    return (int(tripId) > 0) & (int(vehicleId) > 0) & (len(vehicleId) == 4)
 
 # Limit Check: Velocity should be less than 5000
 def isVelocityValid(row):
@@ -47,9 +47,9 @@ def isLatitudeAndLongitudeAvailable(row):
 
 # Limit Check: Latitude and longitude should not be 0.0. ANd Lat < 0 and Long > 0
 def isLatitudeAndLongitudeValid(row):
-    latitude = row['GPS_LATITUDE']
-    longitude = row['GPS_LONGITUDE']
-    return (float(latitude) < 0.0) & (float(longitude) > 0.0)
+    latitude = row['GPS_LATITUDE'] or 0.0
+    longitude = row['GPS_LONGITUDE'] or 0.0
+    return (float(latitude) > 0.0) & (float(longitude) < 0.0)
 
 def isValidData(row):
     valid = True
@@ -217,7 +217,8 @@ def main():
 
     start = time.perf_counter()
 
-    for row in rlis[:50]:
+    print(f"Loading {len(rlis)} rows")
+    for row in rlis[:10000]:
         if isValidData(row):
             cmd_trip = getSQLcmnd(Trip_TableName, row2vals_trip(row))
             cmd_breadcrumb = getSQLcmnd(BreadCrumb_TableName, row2vals_breadcrumb(row))
