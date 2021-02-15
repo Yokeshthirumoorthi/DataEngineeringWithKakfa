@@ -218,6 +218,14 @@ def load(conn, cmd):
         else:
             conn.commit()
 
+def loadToDB(conn, row):
+    if isValidData(row):
+        cmd_trip = getSQLcmnd(Trip_TableName, row2vals_trip(row))
+        cmd_breadcrumb = getSQLcmnd(BreadCrumb_TableName, row2vals_breadcrumb(row))
+        load(conn, cmd_trip)
+        load(conn, cmd_breadcrumb)
+
+
 def main():
     initialize()
     conn = dbconnect()

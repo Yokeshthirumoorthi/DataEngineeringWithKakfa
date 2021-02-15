@@ -26,6 +26,7 @@ from confluent_kafka import Consumer
 import json
 import ccloud_lib
 import time
+import load_bc
 
 if __name__ == '__main__':
 
@@ -53,6 +54,7 @@ if __name__ == '__main__':
 
     # Process messages
     total_count = 0
+    conn = load_bc.dbconnect()
 
     folder_name = "./storage"
     download_date = time.strftime("%Y%m%d")
@@ -81,7 +83,9 @@ if __name__ == '__main__':
                 # write the incoming records to file
                 with open(file_name, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=4)
-      
+
+                load_bc.loadToDB(conn, data)
+
     except KeyboardInterrupt:
         pass
     finally:
