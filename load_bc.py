@@ -69,8 +69,8 @@ def row2vals_breadcrumb(row):
     tstamp = datetime.strptime(row['OPD_DATE'] + ' ' + ttime, '%d-%b-%y %H:%M:%S')
     latitude = row['GPS_LATITUDE']
     longitude = row['GPS_LONGITUDE']
-    direction = 0 #row['DIRECTION']
-    speed = 0 #row['VELOCITY']
+    direction = row['DIRECTION'] or 0
+    speed = row['VELOCITY'] or 0
     tripId = row['EVENT_NO_TRIP']
     
     ret = f"""
@@ -190,7 +190,7 @@ def main():
 
     start = time.perf_counter()
 
-    for row in rlis[:5]:
+    for row in rlis[:500]:
         if isValidTripData(row) & isValidBreadCrumbData(row):
             cmd_trip = getSQLcmnd(Trip_TableName, row2vals_trip(row))
             cmd_breadcrumb = getSQLcmnd(BreadCrumb_TableName, row2vals_breadcrumb(row))
