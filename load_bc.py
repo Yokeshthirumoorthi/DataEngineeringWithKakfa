@@ -14,7 +14,20 @@ DBpwd = "postgres"
 BreadCrumb_TableName = 'BreadCrumb'
 Trip_TableName = 'Trip'
 Datafile = "./downloads/2021-01-13.json"  # name of the data file to be loaded
-CreateDB = True  # indicates whether the DB table should be (re)-created
+CreateDB = False  # indicates whether the DB table should be (re)-created
+
+
+def initialize():
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument("-d", "--datafile", required=True)
+  parser.add_argument("-c", "--createtable", action="store_true")
+  args = parser.parse_args()
+
+  global Datafile
+  Datafile = args.datafile
+  global CreateDB
+  CreateDB = args.createtable
 
 # Existence Check: TripId and Vehicle should not be null
 def isTripIdAndVehicleIdAvailable(row):
@@ -206,6 +219,7 @@ def load(conn, cmd):
             conn.commit()
 
 def main():
+    initialize()
     conn = dbconnect()
     rlis = readdata(Datafile)
     
@@ -217,14 +231,17 @@ def main():
 
     start = time.perf_counter()
 
+    loaded = 0
     print(f"Loading {len(rlis)} rows")
-    for row in rlis[:10000]:
+    for row in rlis[:1000]:
         if isValidData(row):
             cmd_trip = getSQLcmnd(Trip_TableName, row2vals_trip(row))
             cmd_breadcrumb = getSQLcmnd(BreadCrumb_TableName, row2vals_breadcrumb(row))
             load(conn, cmd_trip)
             load(conn, cmd_breadcrumb)
+            loaded = loaded + 1
 
+    print(f"Loaded {loaded} rows")
     elapsed = time.perf_counter() - start
     print(f'Finished Loading. Elapsed Time: {elapsed:0.4} seconds')   
 
