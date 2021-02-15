@@ -16,33 +16,60 @@ Trip_TableName = 'Trip'
 Datafile = "./downloads/2021-01-13.json"  # name of the data file to be loaded
 CreateDB = True  # indicates whether the DB table should be (re)-created
 
-def isValidTripId(tripId):
-    return tripId != ''
+# Existence Check: TripId and Vehicle should not be null
+def isTripIdAndVehicleIdAvailable(row):
+    tripId = row['EVENT_NO_TRIP']
+    vehicleId = row['VEHICLE_ID']
+    return (tripId != '') & (vehicleId != '')
 
-def isValidLatitude(latitude):
-    return latitude != ''
+# Limit Check: TripId and VehicleId should be positive integers. And Vehicle Id should be 4 digits
+def isTripIdAndVehicleIdValid(row):
+    tripId = row['EVENT_NO_TRIP']
+    vehicleId = row['VEHICLE_ID']
+    return int(tripId) > 0 & int(vehicleId) > 0 & len(vehicleId) == 4
 
-def isValidLongitude(tripId):
-    return tripId != ''
+# Limit Check: Velocity should be less than 5000
+def isVelocityValid(row):
+    velocity = row['VELOCITY'] or 0
+    return (int(velocity) >= 0) & (int(velocity) <5000)
 
-def isValidTripData(row):
+# Existence Check: Date and Actual Time should not be null
+def isDateAndTimeAvailable(row):
+    date = row['OPD_DATE']
+    actualTime = row['ACT_TIME']
+    return (date != '') & (actualTime != '')
+
+# Existence Check: Lat Long should not be null
+def isLatitudeAndLongitudeAvailable(row):
+    latitude = row['GPS_LATITUDE']
+    longitude = row['GPS_LONGITUDE']
+    return (latitude != '') & (longitude != '')
+
+# Limit Check: Latitude and longitude should not be 0.0. ANd Lat < 0 and Long > 0
+def isLatitudeAndLongitudeValid(row):
+    latitude = row['GPS_LATITUDE']
+    longitude = row['GPS_LONGITUDE']
+    return (float(latitude) < 0.0) & (float(longitude) > 0.0)
+
+def isValidData(row):
     valid = True
 
-    if not isValidTripId(row['EVENT_NO_TRIP']):
+    if not isTripIdAndVehicleIdAvailable(row):
         valid = False
 
-    return valid
-
-def isValidBreadCrumbData(row):
-    valid = True
-
-    if not isValidTripId(row['EVENT_NO_TRIP']):
+    if not isTripIdAndVehicleIdValid(row):
         valid = False
 
-    if not isValidLatitude(row['GPS_LATITUDE']):
+    if not isVelocityValid(row):
         valid = False
 
-    if not isValidLongitude(row['GPS_LONGITUDE']):
+    if not isDateAndTimeAvailable(row):
+        valid = False
+
+    if not isLatitudeAndLongitudeAvailable(row):
+        valid = False
+
+    if not isLatitudeAndLongitudeValid(row):
         valid = False
 
     return valid
@@ -190,8 +217,8 @@ def main():
 
     start = time.perf_counter()
 
-    for row in rlis[:500]:
-        if isValidTripData(row) & isValidBreadCrumbData(row):
+    for row in rlis[:50]:
+        if isValidData(row):
             cmd_trip = getSQLcmnd(Trip_TableName, row2vals_trip(row))
             cmd_breadcrumb = getSQLcmnd(BreadCrumb_TableName, row2vals_breadcrumb(row))
             load(conn, cmd_trip)
