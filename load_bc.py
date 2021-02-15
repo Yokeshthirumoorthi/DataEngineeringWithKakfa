@@ -63,21 +63,15 @@ def readdata(fname):
 
 	return rowlist
 
-def getSQLcmnds(rowlist):
-	cmdlist = []
-	for row in rowlist:
-		valstr = row2vals_trip(row)
-		cmd = f"INSERT INTO {Trip_TableName} VALUES ({valstr});"
-		cmdlist.append(cmd)
-	return cmdlist
+def getSQLcmnd_trip(row):
+    valstr = row2vals_trip(row)
+    cmd = f"INSERT INTO {Trip_TableName} VALUES ({valstr});"
+    return cmd
 
-def getSQLcmnds_breadcrumb(rowlist):
-	cmdlist = []
-	for row in rowlist:
-		valstr = row2vals_breadcrumb(row)
-		cmd = f"INSERT INTO {BreadCrumb_TableName} VALUES ({valstr});"
-		cmdlist.append(cmd)
-	return cmdlist
+def getSQLcmnd_breadcrumb(row):
+    valstr = row2vals_breadcrumb(row)
+    cmd = f"INSERT INTO {BreadCrumb_TableName} VALUES ({valstr});"
+    return cmd
 
 # connect to the database
 def dbconnect():
@@ -87,7 +81,7 @@ def dbconnect():
         user=DBuser,
         password=DBpwd,
 	)
-	connection.autocommit = False
+	connection.autocommit = True
 	return connection
 
 def dropIfExists(conn):
@@ -146,20 +140,19 @@ def createBreadCrumbTable(conn):
 
 		print(f"Created {BreadCrumb_TableName}")
 
-def load_trip(conn, icmdlist):
+def load(conn, cmd):
     with conn.cursor() as cursor:
-        print(f"Loading {len(icmdlist)} rows")
+        print(f"Loading {len(cmd)} rows")
         start = time.perf_counter()
-    
-        for cmd in icmdlist:
-            print (cmd)
-            # cursor.execute(cmd)
-            try:
-                print(cursor.execute(cmd))
-            except psycopg2.IntegrityError:
-                conn.rollback()
-            else:
-                conn.commit()
+
+        # print (cmd)
+        # cursor.execute(cmd)
+        try:
+            print(cursor.execute(cmd))
+        except psycopg2.IntegrityError:
+            conn.rollback()
+        else:
+            conn.commit()
 
         elapsed = time.perf_counter() - start
         print(f'Finished Loading. Elapsed Time: {elapsed:0.4} seconds')                
@@ -168,16 +161,17 @@ def main():
     conn = dbconnect()
     rlis = readdata(Datafile)
     
-    cmdlist = getSQLcmnds(rlis[:5])
-    cmdlist_breadcrumb = getSQLcmnds_breadcrumb(rlis[:5])
-
     if CreateDB:
     	dropIfExists(conn)
     	createEnumTypes(conn)
     	createTripTable(conn)
     	createBreadCrumbTable(conn)
 
-    load_trip(conn, cmdlist_breadcrumb)
+    for row in rlis[:500]:
+        cmd_trip = getSQLcmnd_trip(row)
+        cmd_breadcrumb = getSQLcmnd_breadcrumb(row)
+        load(conn, cmd_trip)
+        load(conn, cmd_breadcrumb)
 
 
 if __name__ == "__main__":
