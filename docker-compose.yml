@@ -21,16 +21,16 @@ services:
     ports:
       - ${PG_ADMINER_PORT}:8080
 
-  # consumer:
-  #     container_name: consumer
-  #     build:
-  #       context: .
-  #       dockerfile: Dockerfile
-  #     depends_on:
-  #       - postgres
-  #     volumes:
-  #       - data:/srv/data
-  #     restart: on-failure
+  consumer:
+      container_name: consumer
+      build:
+        context: .
+        dockerfile: Dockerfile
+      depends_on:
+        - postgres
+      volumes:
+        - data:/srv/data
+      restart: on-failure
 
 volumes:
   db_data:
