@@ -143,7 +143,7 @@ def getSQLcmnd(tableName, valstr):
 # connect to the database
 def dbconnect():
 	connection = psycopg2.connect(
-        host="postgres",
+        host="localhost",
         database=DBname,
         user=DBuser,
         password=DBpwd,
