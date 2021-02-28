@@ -6,3 +6,4 @@ storage
 *.csv
 *.tsv
 *.geojson
+stops

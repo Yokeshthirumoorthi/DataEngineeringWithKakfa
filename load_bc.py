@@ -241,7 +241,7 @@ def main():
 
     loaded = 0
     print(f"Loading {len(rlis)} rows")
-    for row in rlis[:1000]:
+    for row in rlis:
         if isValidData(row):
             cmd_trip = getSQLcmnd(Trip_TableName, row2vals_trip(row))
             cmd_breadcrumb = getSQLcmnd(BreadCrumb_TableName, row2vals_breadcrumb(row))
