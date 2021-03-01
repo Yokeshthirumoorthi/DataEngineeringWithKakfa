@@ -72,9 +72,9 @@ if __name__ == '__main__':
             else:
                 # Check for Kafka message
                 record_key = msg.key()
-                record_value = msg.value()
-                data = json.loads(record_value)
-                if record_key == 'stops':
+                if record_key == b'stops':
+                    record_value = msg.value()
+                    data = json.loads(record_value)
                     print("Consumed record with key {} and value {}"
                         .format(record_key, record_value))
 

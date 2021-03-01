@@ -81,7 +81,7 @@ if __name__ == '__main__':
                 print("Consumed record with key {} and value {}"
                       .format(record_key, record_value))
 
-                if record_key == 'breadcrumb':                      
+                if record_key == b'breadcrumb':                      
                     # write the incoming records to file
                     with open(file_name, 'w', encoding='utf-8') as f:
                         json.dump(data, f, ensure_ascii=False, indent=4)

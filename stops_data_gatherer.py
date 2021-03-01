@@ -1,6 +1,11 @@
+#!/usr/bin/env python
+#
+# Copyright 2021 Yokesh Thirumoorthi
+
 import pandas as pd
 from urllib.request import urlopen
 from bs4 import BeautifulSoup, Tag
+import json
 
 # h3 element looks like "Stop Events for trip 170612619 for today". 
 # Extract the 5th word as trip_id
@@ -21,7 +26,7 @@ def get_first_row_in_stops_table(h3_element):
 # Convert int(0 / 1) to direction enum 
 # 0 means 'Out' and 1 means 'Back'
 def int_to_dir_enum(dir_int):
-    return 'Back' if dir_int == 1 else 'Out'
+    return 'Back' if dir_int == '1' else 'Out'
 
 # Convert W - Weekday, S - Saturday, U - Sunday
 def char_to_service_enum(service_char):
@@ -34,18 +39,22 @@ def char_to_service_enum(service_char):
     else:
         return 'Sunday' # Do the default
 
-def create_data_row(trip_id, row):
+def create_data_row_json(trip_id, row):
+    trip_json = {}
+
     column_values = [column.text for column in row]
     VEHICLE_NUMBER_INDEX = 0
     ROUTE_NUMBER_INDEX = 3
     DIRECTION_INDEX = 4
     SERVICE_KEY_INDEX = 5
-    vehicle_number = column_values[VEHICLE_NUMBER_INDEX]
-    route_number = column_values[ROUTE_NUMBER_INDEX]
-    direction = int_to_dir_enum(column_values[DIRECTION_INDEX])
-    service_key = char_to_service_enum(column_values[SERVICE_KEY_INDEX])
 
-    return [trip_id, vehicle_number, route_number, direction, service_key]
+    trip_json['trip_id'] = trip_id
+    trip_json['vehicle_number'] = column_values[VEHICLE_NUMBER_INDEX]
+    trip_json['route_number'] = column_values[ROUTE_NUMBER_INDEX]
+    trip_json['direction'] = int_to_dir_enum(column_values[DIRECTION_INDEX])
+    trip_json['service_key'] = char_to_service_enum(column_values[SERVICE_KEY_INDEX])
+
+    return trip_json
 
 # Get the trip headings
 def get_trips_headings(soup):
@@ -66,11 +75,11 @@ def get_stops_data(url):
     for trip_heading in trips_headings:
         trip_id = get_trip_id(trip_heading)
         stop_row = get_first_row_in_stops_table(trip_heading)
-        trip_data = create_data_row(trip_id, stop_row)
+        trip_data = create_data_row_json(trip_id, stop_row)
         trips.append(trip_data)
 
     return trips
 
 if __name__ == "__main__":
     trips = get_stops_data("http://34.83.136.192:8000/getStopEvents/")
-    print_trips(trips)
+    print(trips)
