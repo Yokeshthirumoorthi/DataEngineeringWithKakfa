@@ -26,7 +26,8 @@ from confluent_kafka import Consumer
 import json
 import ccloud_lib
 import time
-import load_bc
+import database
+import stops_data_storage
 
 if __name__ == '__main__':
 
@@ -54,12 +55,7 @@ if __name__ == '__main__':
 
     # Process messages
     total_count = 0
-    conn = load_bc.dbconnect()
-
-    folder_name = "./storage"
-    download_date = time.strftime("%Y%m%d")
-    file_format = ".json"
-    file_name = folder_name + "/" + download_date + file_format
+    conn = database.dbconnect()
 
     try:
         while True:
@@ -78,15 +74,11 @@ if __name__ == '__main__':
                 record_key = msg.key()
                 record_value = msg.value()
                 data = json.loads(record_value)
-                print("Consumed record with key {} and value {}"
-                      .format(record_key, record_value))
+                if record_key == 'stops':
+                    print("Consumed record with key {} and value {}"
+                        .format(record_key, record_value))
 
-                if record_key == 'breadcrumb':                      
-                    # write the incoming records to file
-                    with open(file_name, 'w', encoding='utf-8') as f:
-                        json.dump(data, f, ensure_ascii=False, indent=4)
-
-                    load_bc.loadToDB(conn, data)
+                    stops_data_storage.update_trip_table(conn, data)
 
     except KeyboardInterrupt:
         pass
